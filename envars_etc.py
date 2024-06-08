@@ -1,5 +1,6 @@
 from time import asctime
 from os import getenv
+from colorama import Fore
 
 # env vars
 token = getenv('token')
@@ -15,7 +16,7 @@ def crash_report(exception):
     with open('crash_report.txt', 'w') as crash:
         crash.write(f'{asctime()}\n{str(exception)}')
 
-        print('[ERROR] Check the crash reports')
+        print(f'{Fore.RED}[ERROR] Check the crash reports{Fore.WHITE}')
         quit(1)
 
 def remove_linebreaks(lines):
