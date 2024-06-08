@@ -5,8 +5,11 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.types import ReplyKeyboardMarkup
+from colorama import Fore
 
 import psycopg2
+import colorama
+
 
 db_config = {
     "host": sql_host,
@@ -31,6 +34,8 @@ def update_admin_list():
 
 
 def start():
+    colorama.init(autoreset=False)
+
     class WorkerPost(StatesGroup):
         item_name = State()
         item_count = State()
@@ -64,6 +69,9 @@ def start():
                 with conn.cursor() as cursor:
                     cursor.execute('SELECT item_name, count FROM items;')
                     all_items = cursor.fetchall()
+
+                    print(all_items)
+
                     items_str = '\n'.join(f'{item_name}: {count}' for item_name, count in all_items)
             await mess.answer(items_str)
         else:
@@ -83,6 +91,7 @@ def start():
             with conn.cursor() as cursor:
                 cursor.execute(f"SELECT item_name, count FROM items WHERE item_name = '{mess.text}';")
                 result = cursor.fetchone()
+                print(result)
 
                 if result:
                     await mess.answer(f'{result[0]}: {result[1]}')
@@ -116,11 +125,12 @@ def start():
                 with conn.cursor() as cursor:
                     cursor.execute(
                         f"UPDATE items SET count = {count} WHERE item_name = '{active_dict[mess.chat.id][0]}';")
+
             await mess.answer('Кількість товару успішно відредагована!')
 
-        except Exception as e:
+        except Exception as ex:
             await mess.answer('Сталася помилка')
-            crash_report(e)
+            crash_report(ex)
 
         finally:
             active_dict.pop(mess.chat.id, None)
@@ -152,9 +162,9 @@ def start():
                         f"INSERT INTO items (item_name, count) VALUES ('{active_dict[mess.chat.id][0]}', {count});")
             await mess.answer('Товар було додано!')
 
-        except Exception as e:
+        except Exception as ex:
             await mess.answer('Сталася помилка')
-            crash_report(e)
+            crash_report(ex)
 
         finally:
             active_dict.pop(mess.chat.id, None)
@@ -176,9 +186,9 @@ def start():
                     cursor.execute(f"DELETE FROM items WHERE item_name = '{mess.text}';")
                     await mess.answer('Товар було видалено!')
 
-        except Exception as e:
+        except Exception as ex:
             await mess.answer('Сталася помилка')
-            crash_report(e)
+            crash_report(ex)
 
         finally:
             await state.finish()
@@ -198,9 +208,9 @@ def start():
                 wl.write(f'\n{mess.text}')
                 await mess.answer('ID працівника додано')
 
-        except Exception as e:
+        except Exception as ex:
             await mess.answer('Сталася помилка')
-            crash_report(e)
+            crash_report(ex)
 
         finally:
             await state.finish()
@@ -219,6 +229,9 @@ def start():
             white_list = update_white_list()
             if mess.text in white_list:
                 white_list.remove(mess.text)
+
+                print(f'{mess.text} is {white_list.index(mess.text)} in white list')
+
                 with open(whitelist, 'w') as wl:
                     wl.write('\n'.join(white_list))
                 await mess.answer('ID працівника видалено')
@@ -226,21 +239,21 @@ def start():
             else:
                 await mess.answer('Цього ID нема в списку')
 
-        except Exception as e:
+        except Exception as ex:
             await mess.answer('Сталася помилка')
-            crash_report(e)
+            crash_report(ex)
 
         finally:
             await state.finish()
 
-    print('[OK] Started')
+    print(f'{Fore.WHITE}[{Fore.GREEN}OK]{Fore.WHITE} Started')
     executor.start_polling(dispatcher=disp)
-    print('[OK] Bye!')
+    print(f'{Fore.WHITE}[{Fore.GREEN}OK]{Fore.WHITE} Bye!')
 
 
 if __name__ == '__main__':
     try:
         start()
-    
+
     except Exception as e:
         crash_report(e)
